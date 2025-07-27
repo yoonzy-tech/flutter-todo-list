@@ -6,8 +6,8 @@ import 'package:sqflite/sqflite.dart';
 
 import 'models/task.dart';
 
-final String db_id = 'todo_app_database.db';
-final String task_table_id = 'tasks';
+const String DB_ID = 'todo_app_database.db';
+const String TASK_TABLE_ID = 'tasks';
 
 class TaskManager {
   Database? _database;
@@ -20,7 +20,7 @@ class TaskManager {
 
   // Check if database exists
   Future<bool> databaseExists() async {
-    final dbPath = join(await getDatabasesPath(), db_id);
+    final dbPath = join(await getDatabasesPath(), DB_ID);
     return File(dbPath).exists();
   }
 
@@ -31,13 +31,13 @@ class TaskManager {
       // Set the path to the database. Note: Using the `join` function from the
       // `path` package is best practice to ensure the path is correctly
       // constructed for each platform.
-      join(await getDatabasesPath(), db_id),
+      join(await getDatabasesPath(), DB_ID),
       // When the database is first created, create a table to store tasks.
       onCreate: (db, version) {
         print('Creating database tables for the first time...');
         // Run the CREATE TABLE statement on the database.
         return db.execute(
-          'CREATE TABLE $task_table_id(id INTEGER PRIMARY KEY, list_id INTEGER, title TEXT, description TEXT, is_completed INTEGER, due_date TEXT, created_at TEXT, updated_at TEXT)',
+          'CREATE TABLE $TASK_TABLE_ID(id INTEGER PRIMARY KEY, list_id INTEGER, title TEXT, description TEXT, is_completed INTEGER, due_date TEXT, created_at TEXT, updated_at TEXT)',
         );
       },
       // Set the version. This executes the onCreate function and provides a
@@ -66,7 +66,7 @@ class TaskManager {
 
   // Method to reset the database (useful for development)
   Future<void> resetDatabase() async {
-    final dbPath = join(await getDatabasesPath(), db_id);
+    final dbPath = join(await getDatabasesPath(), DB_ID);
 
     // Close existing database connection if it exists
     if (_database != null) {
@@ -93,7 +93,7 @@ class TaskManager {
       // `conflictAlgorithm` to use in case the same task is inserted twice.
       //
       // In this case, replace any previous data.
-      task_table_id,
+      TASK_TABLE_ID,
       task.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -105,7 +105,7 @@ class TaskManager {
     final db = await database;
 
     // Query the table for all the tasks.
-    final List<Map<String, Object?>> taskMaps = await db.query(task_table_id);
+    final List<Map<String, Object?>> taskMaps = await db.query(TASK_TABLE_ID);
 
     // Convert the list of each task's fields into a list of `task` objects.
     return taskMaps.map((map) => Task.fromMap(map)).toList();
@@ -117,7 +117,7 @@ class TaskManager {
 
     // Update the given Task.
     await db.update(
-      task_table_id,
+      TASK_TABLE_ID,
       task.toMap(),
       // Ensure that the Task has a matching id.
       where: 'id = ?',
@@ -132,7 +132,7 @@ class TaskManager {
 
     // Remove the Task from the database.
     await db.delete(
-      task_table_id,
+      TASK_TABLE_ID,
       // Use a `where` clause to delete a specific task.
       where: 'id = ?',
       // Pass the Task's id as a whereArg to prevent SQL injection.
