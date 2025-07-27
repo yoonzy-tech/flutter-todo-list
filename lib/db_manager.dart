@@ -10,6 +10,16 @@ const String DB_ID = 'todo_app_database.db';
 const String TASK_TABLE_ID = 'tasks';
 
 class TaskManager {
+  // create a single instance from the private constructor
+  static final TaskManager _instance = TaskManager._internal();
+
+  // public factory constructor 
+  // Every time you call TaskManager(), this line is executed and it returns the already-created instance (_instance from line 13).
+  factory TaskManager() => _instance;
+
+  // private constructor
+  TaskManager._internal();
+
   Database? _database;
 
   Future<Database> get database async {

@@ -13,6 +13,7 @@ class _TodoListPageState extends State<TodoListPage> {
   final TaskManager _taskManager = TaskManager();
   List<Task> _tasks = [];
   bool _isLoading = true;
+  bool _showCompleted = true;
   final TextEditingController _textController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
@@ -278,6 +279,24 @@ class _TodoListPageState extends State<TodoListPage> {
     });
   }
 
+  // Add method to clear all completed tasks
+  Future<void> _clearCompletedTasks() async {
+    try {
+      final completedTasks = _tasks.where((task) => task.isCompleted).toList();
+      for (final task in completedTasks) {
+        await _taskManager.deleteTask(task.id!);
+      }
+      await _loadTasks();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error clearing completed tasks: $e')),
+        );
+      }
+      print('Error clearing completed tasks: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -373,16 +392,81 @@ class _TodoListPageState extends State<TodoListPage> {
           if (pendingTasks.isNotEmpty) const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              'Completed (${completedTasks.length})',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
+            child: InkWell(
+              onTap: () {
+                setState(() {
+                  _showCompleted = !_showCompleted;
+                });
+              },
+              borderRadius: BorderRadius.circular(4),
+              child: Row(
+                children: [
+                  Text(
+                    'Completed (${completedTasks.length})',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _showCompleted ? 0.0 : 0.5,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  // Add clear button
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 20,
+                      color: Colors.redAccent,
+                    ),
+                    tooltip: 'Clear all completed',
+                    onPressed:
+                        completedTasks.isEmpty
+                            ? null
+                            : () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder:
+                                    (context) => AlertDialog(
+                                      title: const Text(
+                                        'Clear all completed tasks?',
+                                      ),
+                                      content: const Text(
+                                        'Are you sure you want to delete all completed tasks? This cannot be undone.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed:
+                                              () =>
+                                                  Navigator.pop(context, false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed:
+                                              () =>
+                                                  Navigator.pop(context, true),
+                                          child: const Text('Clear'),
+                                        ),
+                                      ],
+                                    ),
+                              );
+                              if (confirm == true) {
+                                await _clearCompletedTasks();
+                              }
+                            },
+                  ),
+                  const Spacer(),
+                ],
               ),
             ),
           ),
-          ...completedTasks.map((task) => _buildTaskItem(task)),
+          if (_showCompleted)
+            ...completedTasks.map((task) => _buildTaskItem(task)),
         ],
       ],
     );
